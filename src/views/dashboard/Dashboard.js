@@ -388,7 +388,7 @@
 
 
 
-import { cilBadge, cilHeart, cilPhone } from '@coreui/icons'; // Icons themselves
+import { cilBadge, cilHeart, cilPhone, cilDescription } from '@coreui/icons'; // Icons themselves
 import { CIcon } from '@coreui/icons-react'; // Correct package
 import {
   CBadge,
@@ -402,7 +402,7 @@ import {
   CTableHeaderCell,
   CTableRow,
 } from "@coreui/react";
-import avatar from 'src/assets/images/avatars/8.jpg'
+import avatar from 'src/assets/images/avatars/2.jpg'
 import axiosInstance from '../../Helper/axiosIntercepter';
 import { useEffect, useState } from 'react';
 
@@ -457,61 +457,69 @@ export default function Dashboard() {
   },[])
 
   return (
-    <div style={{ padding: "20px", background: "#f4f5f7", minHeight: "100vh" }}>
+    <div className="dashboard-container">
       {/* Patient Info */}
      <PatientInfoCard patientData={patientData}/>
+    <Reports medicalRecords={medicalRecords}/>
 
-      {/* Medical Records */}
-      <CCard>
-        <CCardHeader style={{ backgroundColor: "#212631", color: "#fff" }}>
-          Medical Records
-        </CCardHeader>
-        <CCardBody>
-          <CTable bordered hover responsive>
-            <CTableHead>
-              <CTableRow style={{ backgroundColor: "#e9ecef" }}>
-                <CTableHeaderCell>Record ID</CTableHeaderCell>
-                <CTableHeaderCell>Record Type</CTableHeaderCell>
-                <CTableHeaderCell>Diagnosis Name</CTableHeaderCell>
-                <CTableHeaderCell>Diagnosis Type</CTableHeaderCell>
-                <CTableHeaderCell>Severity</CTableHeaderCell>
-                <CTableHeaderCell>Symptoms</CTableHeaderCell>
-                <CTableHeaderCell>Status</CTableHeaderCell>
-                <CTableHeaderCell>Created At</CTableHeaderCell>
-              </CTableRow>
-            </CTableHead>
-            <CTableBody>
-              {medicalRecords?.map((record) => (
-                <CTableRow key={record.medicalRecordId}>
-                  <CTableDataCell>{record.medicalRecordId}</CTableDataCell>
-                  <CTableDataCell>{record.recordType}</CTableDataCell>
-                  <CTableDataCell>{record.diagnosis.diagnosisName}</CTableDataCell>
-                  <CTableDataCell>{record.diagnosis.diagnosisType}</CTableDataCell>
-                  <CTableDataCell>
-                    <CBadge color={getSeverityColor(record.diagnosis.severity)}>
-                      {record.diagnosis.severity}
-                    </CBadge>
-                  </CTableDataCell>
-                  <CTableDataCell>{record.symptoms}</CTableDataCell>
-                  <CTableDataCell>
-                    <CBadge color={getStatusColor(record.status)}>
-                      {record.status}
-                    </CBadge>
-                  </CTableDataCell>
-                  <CTableDataCell>{record.createdAt}</CTableDataCell>
-                </CTableRow>
-              ))}
-            </CTableBody>
-          </CTable>
-        </CCardBody>
-      </CCard>
     </div>
   );
 }
 
 
 
-
+const Reports = ({medicalRecords}) => {
+  return (
+         <CCard className="medical-records-card">
+         <CCardHeader className="medical-records-header">
+           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+             <CIcon icon={cilDescription} size="lg" />
+             <h4 style={{ margin: 0, fontWeight: 600 }}>Medical Records</h4>
+           </div>
+         </CCardHeader>
+         <CCardBody style={{ padding: 0 }}>
+           <div className="table-responsive-wrapper">
+             <CTable bordered hover responsive className="modern-table">
+               <CTableHead>
+                 <CTableRow className="table-header-row">
+                   <CTableHeaderCell>Record ID</CTableHeaderCell>
+                   <CTableHeaderCell>Record Type</CTableHeaderCell>
+                   <CTableHeaderCell>Diagnosis Name</CTableHeaderCell>
+                   <CTableHeaderCell>Diagnosis Type</CTableHeaderCell>
+                   <CTableHeaderCell>Severity</CTableHeaderCell>
+                   <CTableHeaderCell>Symptoms</CTableHeaderCell>
+                   <CTableHeaderCell>Status</CTableHeaderCell>
+                   <CTableHeaderCell>Created At</CTableHeaderCell>
+                 </CTableRow>
+               </CTableHead>
+               <CTableBody>
+                 {medicalRecords?.map((record, index) => (
+                   <CTableRow key={record.medicalRecordId} className="table-row-animated">
+                     <CTableDataCell className="fw-semibold">{record.medicalRecordId}</CTableDataCell>
+                     <CTableDataCell>{record.recordType}</CTableDataCell>
+                     <CTableDataCell className="fw-semibold">{record.diagnosis.diagnosisName}</CTableDataCell>
+                     <CTableDataCell>{record.diagnosis.diagnosisType}</CTableDataCell>
+                     <CTableDataCell>
+                       <CBadge color={getSeverityColor(record.diagnosis.severity)} className="badge-modern">
+                         {record.diagnosis.severity}
+                       </CBadge>
+                     </CTableDataCell>
+                     <CTableDataCell>{record.symptoms}</CTableDataCell>
+                     <CTableDataCell>
+                       <CBadge color={getStatusColor(record.status)} className="badge-modern">
+                         {record.status}
+                       </CBadge>
+                     </CTableDataCell>
+                     <CTableDataCell className="text-muted">{record.createdAt}</CTableDataCell>
+                   </CTableRow>
+                 ))}
+               </CTableBody>
+             </CTable>
+           </div>
+         </CCardBody>
+       </CCard>
+  )
+}
 
 
 function PatientInfoCard({patientData }) {
@@ -519,44 +527,50 @@ function PatientInfoCard({patientData }) {
 
 
   return (
-    <CCard style={{ 
-      background: "linear-gradient(135deg, #11998e 0%, #3ed778 100%)", 
-      color: "#fff", 
-      borderRadius: "12px",
-      padding: "20px",
-      marginBottom:20
-    }}>
-      <CCardHeader style={{ background: "transparent", borderBottom: "none" }}>
-        <h3 style={{ margin: 0 }}>User Information</h3>
+    <CCard className="patient-info-card">
+      <CCardHeader className="patient-info-header">
+        <h3 style={{ margin: 0, fontWeight: 600 }}>User Information</h3>
       </CCardHeader>
-      <CCardBody>
-        <div style={{ display: "flex", alignItems: "center", gap: "20px", marginBottom: "20px" }}>
+      <CCardBody className="patient-info-body">
+        <div className="patient-avatar-section">
           {/* Avatar */}
-          <img 
-            src={avatar} 
-            alt="avatar" 
-            style={{ width: 150, height: 150, borderRadius: "50%", border: "3px solid #fff" }} 
-          />
+          <div className="avatar-wrapper">
+            <img 
+              src={avatar} 
+              alt="avatar" 
+              className="patient-avatar"
+            />
+            <div className="avatar-ring"></div>
+          </div>
           {/* Name and Age */}
-          <div>
-            <h2 style={{ margin: 0 }}>{name}</h2>
-            <p style={{ margin: "5px 0", fontSize: "1.1rem" }}>Age: {age}</p>
+          <div className="patient-name-section">
+            <h2 className="patient-name">{name || 'User Name'}</h2>
+            <p className="patient-age">Age: {age || 'N/A'}</p>
           </div>
         </div>
 
         {/* Other Info */}
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px", fontSize: "1rem" }}>
-          <div style={styles.infoRow}>
-            <CIcon icon={cilBadge} style={styles.icon} />
-            <span><strong>ID:</strong> {id}</span>
+        <div className="patient-info-grid">
+          <div className="info-item">
+            <CIcon icon={cilBadge} className="info-icon" />
+            <div>
+              <span className="info-label">ID</span>
+              <span className="info-value">{id || 'N/A'}</span>
+            </div>
           </div>
-          <div style={styles.infoRow}>
-            <CIcon icon={cilHeart} style={styles.icon} />
-            <span><strong>Blood Group:</strong> <CBadge color="danger">{bloodGroup}</CBadge></span>
+          <div className="info-item">
+            <CIcon icon={cilHeart} className="info-icon" />
+            <div>
+              <span className="info-label">Blood Group</span>
+              <CBadge color="danger" className="blood-badge">{bloodGroup || 'N/A'}</CBadge>
+            </div>
           </div>
-          <div style={styles.infoRow}>
-            <CIcon icon={cilPhone} style={styles.icon} />
-            <span><strong>Contact:</strong> {contactNumber}</span>
+          <div className="info-item">
+            <CIcon icon={cilPhone} className="info-icon" />
+            <div>
+              <span className="info-label">Contact</span>
+              <span className="info-value">{contactNumber || 'N/A'}</span>
+            </div>
           </div>
         </div>
       </CCardBody>
@@ -564,15 +578,3 @@ function PatientInfoCard({patientData }) {
   );
 }
 
-// Styles
-const styles = {
-  infoRow: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-  },
-  icon: {
-    fontSize: "1.2rem",
-    color: "#fff",
-  },
-};

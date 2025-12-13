@@ -82,10 +82,11 @@ export default function FloatingAddButton() {
         <CButton
           color="primary"
           shape="rounded-pill"
+          className="fab-enhanced"
           style={styles.fab}
           onClick={() => setOpen(!open)}
         >
-          +
+          <span style={{ fontSize: "32px", lineHeight: "1" }}>+</span>
         </CButton>
       </div>
     </>
@@ -117,9 +118,15 @@ const styles = {
     display: "flex",
     flexDirection: "column",
     gap: 10,
+    animation: "fadeIn 0.3s ease-out",
   },
   miniBtn: {
-    width: 150,
+    // width: 150,
     textAlign: "center",
+    borderRadius: "12px",
+    padding: "10px 20px",
+    fontWeight: 600,
+    boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
+    transition: "all 0.3s ease",
   },
 };
