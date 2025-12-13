@@ -20,6 +20,20 @@ export const documentsList = [
 function Reports() {
   const [documents, setDocuments] = useState(documentsList);
 
+  // Handle successful upload
+  const handleUploadSuccess = (uploadResults) => {
+    // Add uploaded documents to the documents list
+    // Assuming the API returns document objects with id, name, type, url
+    const newDocuments = uploadResults.map((result) => ({
+      id: result.id || Date.now() + Math.random(),
+      name: result.name || result.fileName,
+      type: result.type || (result.fileName?.endsWith('.pdf') ? 'pdf' : 'image'),
+      url: result.url || result.fileUrl,
+    }));
+
+    setDocuments((prevDocuments) => [...prevDocuments, ...newDocuments]);
+  };
+
   
 
 
@@ -52,7 +66,7 @@ function Reports() {
         </p>
       </div>
       <DocumentListWithPreview documents={documents}/>
-      <FloatingAddButton/>
+      <FloatingAddButton onUploadSuccess={handleUploadSuccess}/>
     </div>
   )
 }
