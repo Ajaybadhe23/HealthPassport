@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
-import { CCard, CCardBody, CButton, CRow, CCol, CCollapse } from '@coreui/react';
+import { CCard, CCardBody, CButton, CRow, CCol, CCollapse, CSpinner } from '@coreui/react';
 import CIcon from '@coreui/icons-react';
 import { 
   cilArrowLeft, 
@@ -17,130 +17,63 @@ import {
   cilStar,
   cilCalendar
 } from '@coreui/icons';
+import axiosInstance from '../../Helper/axiosIntercepter';
 
-// Comprehensive Health Report JSON Data
-const reportData = {
+// Default/fallback Health Report JSON Data
+const defaultReportData = {
   "overallHealthScore": {
     "score": 75,
     "maxScore": 100,
     "rating": "Good",
     "ratingColor": "green",
-    "assessment": "Overall health is good with some areas needing attention."
+    "assessment": "Overall health is satisfactory with some areas needing attention."
   },
   "outOfRangeValues": [
     {
       "parameter": "LDL Cholesterol",
-      "yourValue": "131 mg/dL",
-      "yourValueNumeric": 131,
+      "yourValue": "140 mg/dL",
       "idealRange": "<100 mg/dL",
-      "rangeMin": 0,
-      "rangeMax": 200,
-      "idealMin": 0,
-      "idealMax": 100,
       "status": "High",
       "severity": "Moderate",
       "severityColor": "orange",
-      "percentageOutOfRange": 31,
-      "category": "Heart Health"
-    },
-    {
-      "parameter": "Vitamin B12",
-      "yourValue": "156 pg/mL",
-      "yourValueNumeric": 156,
-      "idealRange": "187 - 883 pg/mL",
-      "rangeMin": 0,
-      "rangeMax": 1000,
-      "idealMin": 187,
-      "idealMax": 883,
-      "status": "Low",
-      "severity": "Moderate",
-      "severityColor": "orange",
-      "percentageOutOfRange": 16.58,
-      "category": "Nutritional Health"
-    },
-    {
-      "parameter": "Vitamin D 25 Hydroxy",
-      "yourValue": "20.2 ng/mL",
-      "yourValueNumeric": 20.2,
-      "idealRange": "30 - 100 ng/mL",
-      "rangeMin": 0,
-      "rangeMax": 150,
-      "idealMin": 30,
-      "idealMax": 100,
-      "status": "Insufficient",
-      "severity": "Mild",
-      "severityColor": "yellow",
-      "percentageOutOfRange": 32.67,
-      "category": "Nutritional Health"
+      "percentageOutOfRange": 40
     }
-  ],
-  "withinRangeValues": [
-    { "parameter": "Hemoglobin", "value": "15.1 g/dL", "range": "13.0 - 17.0 g/dL", "category": "Blood" },
-    { "parameter": "RBC Count", "value": "5.2 million/µL", "range": "4.5 - 5.5 million/µL", "category": "Blood" },
-    { "parameter": "WBC Count", "value": "7,500 /µL", "range": "4,000 - 11,000 /µL", "category": "Blood" },
-    { "parameter": "Platelet Count", "value": "250,000 /µL", "range": "150,000 - 400,000 /µL", "category": "Blood" },
-    { "parameter": "Creatinine", "value": "1.0 mg/dL", "range": "0.7 - 1.3 mg/dL", "category": "Kidney" },
-    { "parameter": "BUN", "value": "15 mg/dL", "range": "7 - 20 mg/dL", "category": "Kidney" },
-    { "parameter": "ALT", "value": "25 U/L", "range": "7 - 56 U/L", "category": "Liver" },
-    { "parameter": "AST", "value": "22 U/L", "range": "10 - 40 U/L", "category": "Liver" },
-    { "parameter": "Total Cholesterol", "value": "195 mg/dL", "range": "<200 mg/dL", "category": "Heart Health" },
-    { "parameter": "HDL Cholesterol", "value": "55 mg/dL", "range": ">40 mg/dL", "category": "Heart Health" },
-    { "parameter": "Triglycerides", "value": "140 mg/dL", "range": "<150 mg/dL", "category": "Heart Health" },
-    { "parameter": "Fasting Glucose", "value": "92 mg/dL", "range": "70 - 100 mg/dL", "category": "Metabolic" }
   ],
   "summary": {
-    "brief": "The health report indicates good overall health with a few parameters out of the ideal range. LDL cholesterol is moderately high, and there are deficiencies in Vitamin B12 and Vitamin D. Kidney and liver functions are within normal limits.",
-    "reportDate": "2025-10-06",
+    "brief": "The health report indicates a generally good health status with a specific concern regarding LDL cholesterol levels.",
+    "reportDate": "2024-12-13",
     "patientInfo": {
-      "name": "Mr Utkarsh Dubey",
-      "age": "26",
-      "gender": "Male"
+      "name": "Not available",
+      "age": "Not available",
+      "gender": "Not available"
     }
+  },
+  "keyFindings": {
+    "categories": [
+      {
+        "name": "Complete Blood Count",
+        "tests": [
+          {
+            "name": "Hemoglobin",
+            "value": "14.5 g/dL",
+            "normalRange": "13.5-17.5 g/dL",
+            "status": "normal",
+            "icon": "✓"
+          }
+        ]
+      }
+    ]
   },
   "detailedAnalysis": {
     "byCategory": [
       {
         "category": "Cardiovascular Health",
-        "icon": "heart",
         "score": 60,
         "maxScore": 100,
-        "findings": "LDL cholesterol is moderately high, which may increase cardiovascular risk.",
+        "findings": "LDL cholesterol is elevated, indicating a need for lifestyle changes.",
         "keyPoints": [
-          "LDL cholesterol is above the ideal range.",
-          "Consider dietary and lifestyle changes to improve cardiovascular health."
-        ]
-      },
-      {
-        "category": "Nutritional Health",
-        "icon": "nutrition",
-        "score": 50,
-        "maxScore": 100,
-        "findings": "Deficiencies in Vitamin B12 and Vitamin D noted.",
-        "keyPoints": [
-          "Vitamin B12 is below the normal range.",
-          "Vitamin D is insufficient."
-        ]
-      },
-      {
-        "category": "Kidney Function",
-        "icon": "kidney",
-        "score": 95,
-        "maxScore": 100,
-        "findings": "Kidney function markers are within normal limits.",
-        "keyPoints": [
-          "Creatinine and BUN levels are normal.",
-          "Good kidney filtration efficiency."
-        ]
-      },
-      {
-        "category": "Liver Function",
-        "icon": "liver",
-        "score": 92,
-        "maxScore": 100,
-        "findings": "Liver enzymes are within healthy ranges.",
-        "keyPoints": [
-          "ALT and AST levels are normal.",
-          "No signs of liver stress."
+          "Monitor cholesterol levels",
+          "Consider dietary adjustments"
         ]
       }
     ]
@@ -148,62 +81,24 @@ const reportData = {
   "areasOfConcern": [
     {
       "parameter": "LDL Cholesterol",
-      "value": "131 mg/dL",
+      "value": "140 mg/dL",
       "severity": "Moderate",
-      "whyItMatters": "High LDL cholesterol can lead to atherosclerosis and increase the risk of heart disease.",
+      "whyItMatters": "High LDL cholesterol can increase the risk of heart disease.",
       "potentialCauses": [
         "Diet high in saturated fats",
         "Lack of physical activity"
       ],
       "riskLevel": "Medium",
       "targetValue": "<100 mg/dL",
-      "immediateAction": "Adopt a heart-healthy diet and increase physical activity."
-    },
-    {
-      "parameter": "Vitamin B12",
-      "value": "156 pg/mL",
-      "severity": "Moderate",
-      "whyItMatters": "Vitamin B12 deficiency can lead to anemia and neurological issues.",
-      "potentialCauses": [
-        "Dietary deficiency",
-        "Malabsorption"
-      ],
-      "riskLevel": "Medium",
-      "targetValue": "187 - 883 pg/mL",
-      "immediateAction": "Consider Vitamin B12 supplementation."
-    },
-    {
-      "parameter": "Vitamin D 25 Hydroxy",
-      "value": "20.2 ng/mL",
-      "severity": "Mild",
-      "whyItMatters": "Vitamin D is essential for bone health and immune function.",
-      "potentialCauses": [
-        "Lack of sun exposure",
-        "Dietary deficiency"
-      ],
-      "riskLevel": "Low",
-      "targetValue": "30 - 100 ng/mL",
-      "immediateAction": "Increase sun exposure and consider Vitamin D supplementation."
+      "immediateAction": "Consult with a healthcare provider for dietary recommendations."
     }
   ],
   "positiveIndicators": [
     {
       "parameter": "Kidney Function",
       "value": "Normal",
-      "why": "Good kidney filtration and waste removal.",
-      "maintain": "Keep current habits and monitor regularly."
-    },
-    {
-      "parameter": "Liver Function",
-      "value": "Normal",
-      "why": "Efficient liver function with normal enzyme levels.",
-      "maintain": "Continue healthy lifestyle choices."
-    },
-    {
-      "parameter": "Blood Count",
-      "value": "Normal",
-      "why": "Healthy red and white blood cell counts.",
-      "maintain": "Maintain balanced nutrition."
+      "why": "Good kidney filtration indicates healthy kidney function.",
+      "maintain": "Keep current habits"
     }
   ],
   "recommendations": {
@@ -214,11 +109,6 @@ const reportData = {
           "action": "Start Vitamin D supplementation",
           "details": "2000-4000 IU daily",
           "priority": "High"
-        },
-        {
-          "action": "Increase dietary intake of Vitamin B12",
-          "details": "Include more animal products or fortified foods",
-          "priority": "High"
         }
       ]
     },
@@ -226,26 +116,25 @@ const reportData = {
       "timeframe": "1-3 months",
       "dietary": [
         "Reduce saturated fat intake",
-        "Increase fiber intake"
+        "Increase fiber consumption"
       ],
       "lifestyle": [
         "Increase physical activity",
-        "Monitor cholesterol levels"
+        "Manage stress levels"
       ],
       "supplements": [
-        "Vitamin B12",
-        "Vitamin D"
+        "Omega-3 fatty acids"
       ]
     },
     "longTerm": {
       "timeframe": "3-6 months",
       "habits": [
-        "Maintain a balanced diet",
-        "Regular exercise routine"
+        "Regular exercise",
+        "Balanced diet"
       ],
       "monitoring": [
-        "Monitor lipid profile",
-        "Check vitamin levels"
+        "Regular cholesterol checks",
+        "Blood pressure monitoring"
       ]
     }
   },
@@ -255,17 +144,17 @@ const reportData = {
         "timeframe": "3 months",
         "tests": [
           "Lipid panel",
-          "Vitamin D levels"
+          "Fasting glucose"
         ]
       }
     ],
     "discussWithDoctor": [
       "Cholesterol management",
-      "Vitamin supplementation"
+      "Dietary changes"
     ],
     "warningSigns": [
-      "Unexplained fatigue",
-      "Muscle weakness"
+      "Chest pain",
+      "Shortness of breath"
     ]
   },
   "healthScoreBreakdown": {
@@ -275,9 +164,9 @@ const reportData = {
       "status": "Needs Improvement"
     },
     "metabolic": {
-      "score": 18,
+      "score": 16,
       "maxScore": 25,
-      "status": "Good"
+      "status": "Needs Improvement"
     },
     "organFunction": {
       "score": 21,
@@ -289,6 +178,11 @@ const reportData = {
       "maxScore": 25,
       "status": "Fair"
     }
+  },
+  "metadata": {
+    "analysisDate": "2024-12-13T10:30:00Z",
+    "aiModel": "gpt-4o",
+    "version": "1.0"
   }
 };
 
@@ -333,70 +227,6 @@ const DottedCircle = ({ score, color = "#667eea" }) => {
         }}>
           {score}
         </div>
-      </div>
-    </div>
-  );
-};
-
-// Range Bar Component - shows where value lies in range
-const RangeBar = ({ value, rangeMin, rangeMax, idealMin, idealMax, status }) => {
-  const totalRange = rangeMax - rangeMin;
-  const valuePosition = ((value - rangeMin) / totalRange) * 100;
-  const idealStart = ((idealMin - rangeMin) / totalRange) * 100;
-  const idealEnd = ((idealMax - rangeMin) / totalRange) * 100;
-  
-  const getStatusColor = () => {
-    if (status === 'High') return '#ef5350';
-    if (status === 'Low' || status === 'Insufficient') return '#ff9800';
-    return '#4caf50';
-  };
-
-  return (
-    <div style={{ marginTop: "12px", marginBottom: "8px" }}>
-      <div style={{
-        position: "relative",
-        height: "8px",
-        background: "#f0f0f0",
-        borderRadius: "4px",
-        overflow: "visible"
-      }}>
-        {/* Ideal range highlight */}
-        <div style={{
-          position: "absolute",
-          left: `${idealStart}%`,
-          width: `${idealEnd - idealStart}%`,
-          height: "100%",
-          background: "rgba(76, 175, 80, 0.3)",
-          borderRadius: "4px"
-        }} />
-        
-        {/* Value indicator */}
-        <div style={{
-          position: "absolute",
-          left: `${Math.min(Math.max(valuePosition, 2), 98)}%`,
-          top: "50%",
-          transform: "translate(-50%, -50%)",
-          width: "16px",
-          height: "16px",
-          background: getStatusColor(),
-          borderRadius: "50%",
-          border: "3px solid #fff",
-          boxShadow: "0 2px 6px rgba(0,0,0,0.3)",
-          zIndex: 2
-        }} />
-      </div>
-      
-      {/* Range labels */}
-      <div style={{
-        display: "flex",
-        justifyContent: "space-between",
-        marginTop: "6px",
-        fontSize: "0.7rem",
-        color: "#999"
-      }}>
-        <span>{rangeMin}</span>
-        <span style={{ color: "#4caf50", fontWeight: 600 }}>Ideal: {idealMin}-{idealMax}</span>
-        <span>{rangeMax}</span>
       </div>
     </div>
   );
@@ -475,14 +305,85 @@ const RiskIndicator = ({ level }) => {
 };
 
 function Summary() {
-  const { id } = useParams();
+  const { userId, fileId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const [expandedConcern, setExpandedConcern] = useState(null);
-  const [showAllWithinRange, setShowAllWithinRange] = useState(false);
+  const [reportData, setReportData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  // Scroll to top when component mounts or route changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }, [userId, fileId]);
+
+  useEffect(() => {
+    const fetchReportData = async () => {
+      setLoading(true);
+      setError(null);
+      try {
+        const response = await axiosInstance.get(`/users/${userId}/record/${fileId}`);
+        setReportData(response.data);
+      } catch (err) {
+        console.error("Error fetching report data:", err);
+        setError(err);
+        // Use default data as fallback
+        setReportData(defaultReportData);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (userId && fileId) {
+      fetchReportData();
+    }
+  }, [userId, fileId]);
+
+  // Show loading spinner while fetching data
+  if (loading) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)"
+      }}>
+        <CSpinner color="primary" style={{ width: "3rem", height: "3rem" }} />
+      </div>
+    );
+  }
+
+  // Show error state
+  if (error && !reportData) {
+    return (
+      <div style={{
+        minHeight: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        justifyContent: "center",
+        background: "linear-gradient(180deg, #f8f9fa 0%, #e9ecef 100%)",
+        padding: "20px"
+      }}>
+        <div style={{ fontSize: "4rem", marginBottom: "20px" }}>❌</div>
+        <h3 style={{ color: "#c62828", marginBottom: "10px" }}>Failed to load report</h3>
+        <p style={{ color: "#666", marginBottom: "20px" }}>Unable to fetch the report data. Please try again.</p>
+        <CButton color="primary" onClick={() => navigate(-1)}>
+          Go Back
+        </CButton>
+      </div>
+    );
+  }
+
+  if (!reportData) return null;
   
-  const withinRangeCount = reportData.withinRangeValues.length;
-  const outOfRangeCount = reportData.outOfRangeValues.length;
+  // Count all normal tests from keyFindings
+  const normalTestsCount = reportData.keyFindings?.categories?.reduce((total, category) => {
+    return total + (category.tests?.filter(test => test.status === 'normal')?.length || 0);
+  }, 0) || 0;
+  const outOfRangeCount = reportData.outOfRangeValues?.length || 0;
 
   return (
     <div style={{ 
@@ -596,13 +497,13 @@ function Summary() {
                     letterSpacing: "0.5px",
                     marginBottom: "8px"
                   }}>
-                    WITHIN RANGE
+                    NORMAL
                   </div>
                   <div style={{ display: "flex", alignItems: "baseline", justifyContent: "center", gap: "4px" }}>
                     <span style={{ fontSize: "1.8rem", fontWeight: 700, color: "#2e7d32" }}>
-                      {withinRangeCount}
+                      {normalTestsCount}
                     </span>
-                    <span style={{ fontSize: "0.85rem", color: "#4caf50" }}>Parameters</span>
+                    <span style={{ fontSize: "0.85rem", color: "#4caf50" }}>Tests</span>
                   </div>
                 </div>
               </CCol>
@@ -762,11 +663,15 @@ function Summary() {
                       {param.parameter}
                     </div>
                     <div style={{
-                      fontSize: "0.75rem",
-                      color: "#6c757d",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
                       marginBottom: "8px"
                     }}>
-                      {param.category}
+                      <SeverityBadge severity={param.severity} />
+                      <span style={{ fontSize: "0.75rem", color: "#6c757d" }}>
+                        {param.status}
+                      </span>
                     </div>
                   </div>
                   <div style={{ textAlign: "right" }}>
@@ -775,10 +680,10 @@ function Summary() {
                       fontWeight: 700,
                       color: param.status === 'High' ? '#ef5350' : '#ff9800'
                     }}>
-                      {param.yourValueNumeric}
+                      {param.yourValue}
                     </div>
                     <div style={{ fontSize: "0.75rem", color: "#999" }}>
-                      Range: {param.idealRange}
+                      Ideal: {param.idealRange}
                     </div>
                   </div>
                   <CIcon 
@@ -787,15 +692,25 @@ function Summary() {
                   />
                 </div>
 
-                {/* Range Bar */}
-                <RangeBar 
-                  value={param.yourValueNumeric}
-                  rangeMin={param.rangeMin}
-                  rangeMax={param.rangeMax}
-                  idealMin={param.idealMin}
-                  idealMax={param.idealMax}
-                  status={param.status}
-                />
+                {/* Percentage out of range indicator */}
+                {param.percentageOutOfRange && (
+                  <div style={{
+                    marginTop: "12px",
+                    background: "#ffebee",
+                    borderRadius: "8px",
+                    padding: "8px 12px",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "space-between"
+                  }}>
+                    <span style={{ fontSize: "0.8rem", color: "#c62828" }}>
+                      Out of range by
+                    </span>
+                    <span style={{ fontSize: "0.9rem", fontWeight: 700, color: "#c62828" }}>
+                      {param.percentageOutOfRange}%
+                    </span>
+                  </div>
+                )}
 
                 {/* Expanded Details */}
                 <CCollapse visible={expandedConcern === index}>
@@ -882,93 +797,109 @@ function Summary() {
           </CCardBody>
         </CCard>
 
-        {/* Within Range Parameters */}
-        <CCard style={{
-          borderRadius: "16px",
-          border: "none",
-          boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
-          marginBottom: "16px"
-        }}>
-          <CCardBody style={{ padding: "20px" }}>
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "10px",
-              marginBottom: "16px"
-            }}>
+        {/* Key Findings */}
+        {reportData.keyFindings?.categories?.length > 0 && (
+          <CCard style={{
+            borderRadius: "16px",
+            border: "none",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+            marginBottom: "16px"
+          }}>
+            <CCardBody style={{ padding: "20px" }}>
               <div style={{
-                width: "4px",
-                height: "24px",
-                background: "#4caf50",
-                borderRadius: "2px"
-              }} />
-              <span style={{ fontWeight: 700, fontSize: "1rem", color: "#212529" }}>
-                Within Range Parameters
-              </span>
-            </div>
-
-            <div style={{
-              display: "flex",
-              alignItems: "center",
-              gap: "8px",
-              marginBottom: "16px",
-              color: "#2e7d32",
-              fontSize: "0.9rem",
-              fontWeight: 600
-            }}>
-              <CIcon icon={cilCheckCircle} />
-              {withinRangeCount} parameters within normal range
-            </div>
-
-            {(showAllWithinRange ? reportData.withinRangeValues : reportData.withinRangeValues.slice(0, 4)).map((param, index) => (
-              <div
-                key={index}
-                style={{
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                  padding: "12px 0",
-                  borderBottom: index < (showAllWithinRange ? reportData.withinRangeValues.length : 4) - 1 ? "1px solid #f0f0f0" : "none"
-                }}
-              >
-                <div>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 500, color: "#212529" }}>
-                    {param.parameter}
-                  </div>
-                  <div style={{ fontSize: "0.75rem", color: "#6c757d" }}>
-                    {param.category}
-                  </div>
-                </div>
-                <div style={{ textAlign: "right" }}>
-                  <div style={{ fontSize: "0.9rem", fontWeight: 600, color: "#2e7d32" }}>
-                    {param.value}
-                  </div>
-                  <div style={{ fontSize: "0.7rem", color: "#999" }}>
-                    {param.range}
-                  </div>
-                </div>
+                display: "flex",
+                alignItems: "center",
+                gap: "10px",
+                marginBottom: "16px"
+              }}>
+                <div style={{
+                  width: "4px",
+                  height: "24px",
+                  background: "#4caf50",
+                  borderRadius: "2px"
+                }} />
+                <span style={{ fontWeight: 700, fontSize: "1rem", color: "#212529" }}>
+                  Key Findings
+                </span>
               </div>
-            ))}
 
-            {reportData.withinRangeValues.length > 4 && (
-              <CButton
-                color="link"
-                onClick={() => setShowAllWithinRange(!showAllWithinRange)}
-                style={{
-                  width: "100%",
-                  marginTop: "12px",
-                  color: "#667eea",
-                  textDecoration: "none",
-                  fontWeight: 600,
-                  fontSize: "0.9rem"
-                }}
-              >
-                {showAllWithinRange ? 'Show less' : `Show ${reportData.withinRangeValues.length - 4} more parameters`}
-                <CIcon icon={showAllWithinRange ? cilChevronBottom : cilChevronRight} className="ms-2" />
-              </CButton>
-            )}
-          </CCardBody>
-        </CCard>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+                marginBottom: "16px",
+                color: "#2e7d32",
+                fontSize: "0.9rem",
+                fontWeight: 600
+              }}>
+                <CIcon icon={cilCheckCircle} />
+                {normalTestsCount} tests within normal range
+              </div>
+
+              {reportData.keyFindings.categories.map((category, catIndex) => (
+                <div key={catIndex} style={{ marginBottom: catIndex < reportData.keyFindings.categories.length - 1 ? "20px" : 0 }}>
+                  <div style={{
+                    fontSize: "0.9rem",
+                    fontWeight: 600,
+                    color: "#495057",
+                    marginBottom: "12px",
+                    padding: "8px 12px",
+                    background: "#f8f9fa",
+                    borderRadius: "8px"
+                  }}>
+                    {category.name}
+                  </div>
+                  
+                  {category.tests?.map((test, testIndex) => (
+                    <div
+                      key={testIndex}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "12px 0",
+                        borderBottom: testIndex < category.tests.length - 1 ? "1px solid #f0f0f0" : "none"
+                      }}
+                    >
+                      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                        <span style={{
+                          fontSize: "1rem",
+                          color: test.status === 'normal' ? '#4caf50' : '#ff9800'
+                        }}>
+                          {test.icon || (test.status === 'normal' ? '✓' : '!')}
+                        </span>
+                        <div>
+                          <div style={{ fontSize: "0.9rem", fontWeight: 500, color: "#212529" }}>
+                            {test.name}
+                          </div>
+                          <div style={{ fontSize: "0.75rem", color: "#6c757d" }}>
+                            Normal: {test.normalRange}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ textAlign: "right" }}>
+                        <div style={{ 
+                          fontSize: "0.9rem", 
+                          fontWeight: 600, 
+                          color: test.status === 'normal' ? '#2e7d32' : '#ff9800'
+                        }}>
+                          {test.value}
+                        </div>
+                        <div style={{ 
+                          fontSize: "0.7rem", 
+                          color: test.status === 'normal' ? '#4caf50' : '#ff9800',
+                          textTransform: "capitalize"
+                        }}>
+                          {test.status}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ))}
+            </CCardBody>
+          </CCard>
+        )}
 
         {/* Detailed Analysis by Category */}
         <CCard style={{

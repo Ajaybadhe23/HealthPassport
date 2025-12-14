@@ -1,6 +1,10 @@
 // import Modal from "react-bootstrap";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { getCurrentUserId, usePatient } from "../context/PatientContext";
+import axiosInstance from "../Helper/axiosIntercepter";
+import CIcon from "@coreui/icons-react";
+import { cilCloudDownload } from "@coreui/icons";
 
 import {
     CButton,
@@ -12,88 +16,46 @@ import {
 } from "@coreui/react";
 
 
-function ImageThumbnail({ url }) {
-    return (
-        <img
-            src={url}
-            alt="preview"
-            className="document-thumbnail"
-        />
-    );
-}
-
-function PdfThumbnail({ url, onClick }) {
-    // For local file paths, show placeholder
-    const isLocalPath = url && (url.startsWith('C:\\') || url.startsWith('file://'));
-    
-    if (isLocalPath) {
-        return (
-            <div 
-                className="document-thumbnail pdf-thumbnail pdf-placeholder"
-                onClick={onClick}
-                style={{ cursor: "pointer" }}
-            >
-                <div style={{
-                    display: "flex",
-                    flexDirection: "column",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    height: "100%",
-                    color: "#667eea",
-                    fontSize: "3rem"
-                }}>
-                    📄
-                    <span style={{ fontSize: "0.9rem", marginTop: "8px", color: "#495057" }}>PDF Document</span>
-                </div>
-            </div>
-        );
-    }
+// Simple file icon thumbnail
+function FileThumbnail({ type, contentType, name }) {
+    const isPdf = type === "pdf" || type === "pddf" || contentType === "application/pdf";
     
     return (
         <div 
-            className="document-thumbnail pdf-thumbnail"
-            onClick={onClick}
-            style={{ 
-                position: "relative",
-                cursor: "pointer",
-                overflow: "hidden"
+            className="document-thumbnail"
+            style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                justifyContent: "center",
+                height: "100%",
+                minHeight: "150px",
+                background: isPdf 
+                    ? "linear-gradient(135deg, #fff5f5 0%, #ffe0e0 100%)" 
+                    : "linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)",
+                cursor: "pointer"
             }}
         >
-            <iframe
-                src={`${url}#page=1&zoom=fit`}
-                title="PDF Preview"
-                style={{ 
-                    border: "none",
-                    width: "100%",
-                    height: "200px",
-                    pointerEvents: "none" // Prevent iframe from capturing clicks
-                }}
-            />
-            {/* Click overlay to ensure clicks are captured */}
-            <div 
-                style={{
-                    position: "absolute",
-                    top: 0,
-                    left: 0,
-                    right: 0,
-                    bottom: 0,
-                    zIndex: 1
-                }}
-                onClick={onClick}
-            />
+            <div style={{
+                fontSize: "4rem",
+                marginBottom: "12px"
+            }}>
+                {isPdf ? "📄" : "🖼️"}
+            </div>
+            <span style={{ 
+                fontSize: "0.85rem", 
+                color: "#495057",
+                fontWeight: 500,
+                textAlign: "center",
+                padding: "0 12px",
+                overflow: "hidden",
+                textOverflow: "ellipsis",
+                whiteSpace: "nowrap",
+                maxWidth: "100%"
+            }}>
+                {isPdf ? "PDF Document" : "Image File"}
+            </span>
         </div>
-    );
-}
-
-function PdfViewer({ url }) {
-    return (
-        <iframe
-            src={url}
-            width="100%"
-            height="100%"
-            title="PDF Viewer"
-            style={{ border: "none" }}
-        />
     );
 }
 
@@ -101,16 +63,48 @@ function PdfViewer({ url }) {
 export default function DocumentListWithPreview({ documents }) {
     const [selectedDoc, setSelectedDoc] = useState(null);
     const navigate = useNavigate();
-    
-    const getFileIcon = (type) => {
-        return type === "pdf" || type === "pddf" ? "📄" : "🖼️";
-    };
+    const { patientData } = usePatient();
     
     const handleViewSummary = (doc, e) => {
         e.stopPropagation();
-        navigate(`/summary/${doc.id || encodeURIComponent(doc.url)}`, { 
+        const userId = getCurrentUserId();
+        const fileId = doc.fileId || encodeURIComponent(doc.url);
+        navigate(`/summary/${userId}/${fileId}`, { 
             state: { document: doc } 
         });
+    };
+
+    const handleDownload = async (doc, e) => {
+        e.stopPropagation();
+        const userId = getCurrentUserId();
+        const originalFileName = doc.originalFileName || doc.name;
+        
+        if (!originalFileName) {
+            alert("File name not available");
+            return;
+        }
+
+        try {
+            const response = await axiosInstance.get(
+                `/api/users/${userId}/files/download/${encodeURIComponent(originalFileName)}`,
+                {
+                    responseType: 'blob'
+                }
+            );
+
+            // Create blob URL and trigger download
+            const url = window.URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', originalFileName);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error("Download error:", error);
+            alert(`Download failed: ${error.response?.data?.message || error.message || 'Unknown error'}`);
+        }
     };
     
     if (!documents || documents.length === 0) {
@@ -147,7 +141,7 @@ export default function DocumentListWithPreview({ documents }) {
                     <div 
                         key={doc.id || doc.url} 
                         className="document-card fade-in"
-                        onClick={() => { setSelectedDoc(doc) }}
+                        // onClick={() => { setSelectedDoc(doc) }}
                     >
                         <div className="document-thumbnail-container">
                             {/* Document name and type badge at the top */}
@@ -175,31 +169,19 @@ export default function DocumentListWithPreview({ documents }) {
                                     textOverflow: "ellipsis",
                                     whiteSpace: "nowrap"
                                 }}>
-                                    {doc.name}
+                                    {doc.originalFileName}
                                 </p>
-                                <div className="document-type-badge" style={{
-                                    marginLeft: "8px",
-                                    pointerEvents: "auto"
-                                }}>
-                                    {doc.type === "pdf" || doc.type === "pddf" ? "PDF" : "IMAGE"}
+                                <div className="document-type-badge" style={{ marginLeft: "8px", pointerEvents: "auto" }}>
+                                    {doc.contentType === "application/pdf" || doc.type === "pddf" ? "PDF" : "IMAGE"}
                                 </div>
                             </div>
-                            {doc.type === "pdf" || doc.type === "pddf" ? (
-                                <PdfThumbnail 
-                                    url={doc.url} 
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedDoc(doc);
-                                    }}
-                                />
-                            ) : (
-                                <ImageThumbnail url={doc.url} />
-                            )}
+                            <FileThumbnail type={doc.type} contentType={doc.contentType} name={doc.name} />
                         </div>
-                        <div className="document-info">
+                        <div className="document-info" style={{ display: "flex", gap: "2px" }}>
                             <CButton
                                 color="primary"
                                 size="sm"
+                                disabled={!doc.processed}
                                 onClick={(e) => handleViewSummary(doc, e)}
                                 style={{
                                     borderRadius: "8px",
@@ -209,7 +191,7 @@ export default function DocumentListWithPreview({ documents }) {
                                     whiteSpace: "nowrap",
                                     boxShadow: "0 2px 8px rgba(102, 126, 234, 0.3)",
                                     transition: "all 0.3s ease",
-                                    width: "100%"
+                                    flex: 7
                                 }}
                                 onMouseEnter={(e) => {
                                     e.target.style.transform = "translateY(-2px)";
@@ -222,12 +204,41 @@ export default function DocumentListWithPreview({ documents }) {
                             >
                                 View Summary
                             </CButton>
+                            <CButton
+                                color="success"
+                                size="sm"
+                                onClick={(e) => {
+                                    e.stopPropagation();
+                                    handleDownload(doc, e);
+                                }}
+                                style={{
+                                    borderRadius: "8px",
+                                    padding: "6px 16px",
+                                    whiteSpace: "nowrap",
+                                    boxShadow: "0 2px 8px rgba(40, 167, 69, 0.3)",
+                                    transition: "all 0.3s ease",
+                                    flex: 1,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center"
+                                }}
+                                onMouseEnter={(e) => {
+                                    e.target.style.transform = "translateY(-2px)";
+                                    e.target.style.boxShadow = "0 4px 12px rgba(40, 167, 69, 0.4)";
+                                }}
+                                onMouseLeave={(e) => {
+                                    e.target.style.transform = "translateY(0)";
+                                    e.target.style.boxShadow = "0 2px 8px rgba(40, 167, 69, 0.3)";
+                                }}
+                            >
+                                <CIcon icon={cilCloudDownload} size="lg" style={{ color: "#fff" }} />
+                            </CButton>
                         </div>
                     </div>
                 ))}
             </div>
 
-            <CModal 
+            {/* <CModal 
                 visible={!!selectedDoc} 
                 onClose={() => { setSelectedDoc(null) }} 
                 size="xl"
@@ -242,21 +253,49 @@ export default function DocumentListWithPreview({ documents }) {
                         {selectedDoc?.name}
                     </CModalTitle>
                 </CModalHeader>
-                <CModalBody style={{ height: "80vh", padding: 0, background: "#f8f9fa" }}>
+                <CModalBody style={{ height: "auto", padding: "40px", background: "#f8f9fa" }}>
                     {selectedDoc && (
-                        selectedDoc.type === "pdf" || selectedDoc.type === "pddf" ? (
-                            <PdfViewer url={selectedDoc.url} />
-                        ) : (
-                            <div style={{ 
-                                display: "flex", 
-                                alignItems: "center", 
-                                justifyContent: "center",
-                                height: "100%",
-                                padding: "20px"
-                            }}>
-                                <ImageThumbnail url={selectedDoc.url} />
+                        <div style={{ 
+                            display: "flex", 
+                            flexDirection: "column",
+                            alignItems: "center", 
+                            justifyContent: "center",
+                            padding: "40px 20px",
+                            background: "white",
+                            borderRadius: "16px",
+                            boxShadow: "0 4px 12px rgba(0, 0, 0, 0.1)"
+                        }}>
+                            <div style={{ fontSize: "5rem", marginBottom: "20px" }}>
+                                {selectedDoc.type === "pdf" || selectedDoc.type === "pddf" || selectedDoc.contentType === "application/pdf" ? "📄" : "🖼️"}
                             </div>
-                        )
+                            <h4 style={{ 
+                                margin: "0 0 8px 0", 
+                                fontWeight: 600, 
+                                color: "#212529",
+                                textAlign: "center",
+                                wordBreak: "break-word"
+                            }}>
+                                {selectedDoc.name}
+                            </h4>
+                            <p style={{ 
+                                margin: "0 0 20px 0", 
+                                color: "#6c757d",
+                                fontSize: "0.9rem"
+                            }}>
+                                {selectedDoc.type === "pdf" || selectedDoc.type === "pddf" || selectedDoc.contentType === "application/pdf" ? "PDF Document" : "Image File"}
+                            </p>
+                            {selectedDoc.url && (
+                                <CButton
+                                    color="primary"
+                                    href={selectedDoc.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{ borderRadius: "8px", padding: "10px 24px" }}
+                                >
+                                    Open File
+                                </CButton>
+                            )}
+                        </div>
                     )}
                 </CModalBody>
                 <CModalFooter style={{ borderTop: "1px solid #dee2e6" }}>
@@ -268,7 +307,7 @@ export default function DocumentListWithPreview({ documents }) {
                         Close
                     </CButton>
                 </CModalFooter>
-            </CModal>
+            </CModal> */}
         </>
     );
 }

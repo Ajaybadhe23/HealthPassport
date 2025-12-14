@@ -388,7 +388,7 @@
 
 
 
-import { cilBadge, cilHeart, cilPhone, cilDescription, cilShare } from '@coreui/icons'; // Icons themselves
+import { cilBadge, cilHeart, cilPhone, cilDescription, cilShare, cilCalendar } from '@coreui/icons'; // Icons themselves
 import { CIcon } from '@coreui/icons-react'; // Correct package
 import {
   CBadge,
@@ -404,8 +404,9 @@ import {
   CTableRow,
 } from "@coreui/react";
 import avatar from 'src/assets/images/avatars/2.jpg'
-import axiosInstance from '../../Helper/axiosIntercepter';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo } from 'react';
+import { getCurrentUserId, usePatient } from '../../context/PatientContext';
+import { useNavigate } from 'react-router-dom';
 
 
 // Function to get badge color based on severity
@@ -440,28 +441,19 @@ const getStatusColor = (status) => {
 
 
 export default function Dashboard() {
-  const [patientData, setPatientData] = useState({})
-  async function getPatientData() {
-    try {
-      const response = await axiosInstance.get("/user/123");
-      setPatientData(response.data);
-    } catch (error) {
-      console.error("Error fetching patient data:", error);
-    }
-  }
-  const { medicalRecords } = patientData;
+  const { patientData, getPatientData } = usePatient();
+  const { medicalRecordShorts } = patientData;
   
-  
-  
-  useEffect(()=>{
-    getPatientData()
-  },[])
+  useEffect(() => {
+    getPatientData();
+  }, [getPatientData]);
 
   return (
     <div className="dashboard-container">
       {/* Patient Info */}
      <PatientInfoCard patientData={patientData}/>
-    <Reports medicalRecords={medicalRecords}/>
+     <TimelineView medicalRecords={medicalRecordShorts}/>
+    <Reports medicalRecords={medicalRecordShorts}/>
 
     </div>
   );
@@ -469,7 +461,146 @@ export default function Dashboard() {
 
 
 
+// Timeline Component - Groups records by date
+const TimelineView = ({ medicalRecords }) => {
+  const navigate = useNavigate();
+  
+  // Format date helper function
+  const formatDate = (dateString) => {
+    if (!dateString) return 'Unknown Date';
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('en-US', { 
+        year: 'numeric', 
+        month: 'long', 
+        day: 'numeric' 
+      });
+    } catch (e) {
+      return dateString;
+    }
+  };
+  
+  // Group records by date
+  const groupedRecords = useMemo(() => {
+    if (!medicalRecords || medicalRecords.length === 0) return {};
+    
+    const grouped = {};
+    const dateMap = {}; // Map formatted date to original date string for sorting
+    
+    medicalRecords.forEach((record) => {
+      const dateKey = record.createdAt ? formatDate(record.createdAt) : 'Unknown Date';
+      if (!grouped[dateKey]) {
+        grouped[dateKey] = [];
+        dateMap[dateKey] = record.createdAt || '';
+      }
+      grouped[dateKey].push(record);
+    });
+    
+    // Sort dates in descending order (newest first) using original createdAt
+    const sortedDates = Object.keys(grouped).sort((a, b) => {
+      const dateA = dateMap[a] ? new Date(dateMap[a]) : new Date(0);
+      const dateB = dateMap[b] ? new Date(dateMap[b]) : new Date(0);
+      return dateB - dateA;
+    });
+    
+    const sortedGrouped = {};
+    sortedDates.forEach(date => {
+      sortedGrouped[date] = grouped[date];
+    });
+    
+    return sortedGrouped;
+  }, [medicalRecords]);
+  
+  const handleViewSummary = (doc) => {
+    const userId = getCurrentUserId();
+    const fileId = doc.medicalRecordId || encodeURIComponent(doc.url);
+    navigate(`/summary/${userId}/${fileId}`, { 
+        state: { document: doc } 
+    });
+  };
+  
+  if (!medicalRecords || medicalRecords.length === 0) {
+    return null;
+  }
+  
+  return (
+    <CCard className="timeline-card">
+      <CCardHeader className="timeline-header">
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <CIcon icon={cilCalendar} size="lg" />
+          <h4 style={{ margin: 0, fontWeight: 600 }}>Medical Records Timeline</h4>
+        </div>
+      </CCardHeader>
+      <CCardBody className="timeline-body">
+        <div className="timeline-container">
+          {Object.entries(groupedRecords).map(([date, records], dateIndex) => (
+            <div key={date} className="timeline-date-group">
+              <div className="timeline-date-marker">
+                <div className="timeline-dot"></div>
+                <div className="timeline-line"></div>
+                <div className="timeline-date-label">
+                  <CIcon icon={cilCalendar} className="timeline-date-icon" />
+                  <span className="timeline-date-text">{date}</span>
+                  <CBadge color="info" className="timeline-count-badge">
+                    {records.length} {records.length === 1 ? 'Record' : 'Records'}
+                  </CBadge>
+                </div>
+              </div>
+              <div className="timeline-records">
+                {records.map((record, recordIndex) => (
+                  <div key={record.medicalRecordId || recordIndex} className="timeline-record-card">
+                    <div className="timeline-record-header">
+                      <div className="timeline-record-id">
+                        <strong>Record ID:</strong> {record.medicalRecordId}
+                      </div>
+                      <CBadge color={getSeverityColor(record.diagnosis?.severity)} className="badge-modern">
+                        {record.diagnosis?.severity || 'N/A'}
+                      </CBadge>
+                    </div>
+                    <div className="timeline-record-content">
+                      <div className="timeline-record-item">
+                        <span className="timeline-label">Type:</span>
+                        <span className="timeline-value">{record.recordType || 'N/A'}</span>
+                      </div>
+                      <div className="timeline-record-item">
+                        <span className="timeline-label">Diagnosis:</span>
+                        <span className="timeline-value">{record.diagnosis?.description || 'N/A'}</span>
+                      </div>
+                      <div className="timeline-record-item">
+                        <span className="timeline-label">Symptoms:</span>
+                        <span className="timeline-value">{record.symptoms || 'N/A'}</span>
+                      </div>
+                      <div className="timeline-record-actions">
+                        <CButton 
+                          color="primary" 
+                          size="sm" 
+                          onClick={() => handleViewSummary(record)}
+                          className="timeline-view-btn"
+                        >
+                          View Details
+                        </CButton>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </CCardBody>
+    </CCard>
+  );
+};
+
 const Reports = ({medicalRecords}) => {
+  const navigate = useNavigate();
+  const handleViewSummary = (doc) => {
+    const userId = getCurrentUserId();
+    const fileId = doc.medicalRecordId || encodeURIComponent(doc.url);
+    navigate(`/summary/${userId}/${fileId}`, { 
+        state: { document: doc } 
+    });
+};
   return (
          <CCard className="medical-records-card">
          <CCardHeader className="medical-records-header">
@@ -480,17 +611,18 @@ const Reports = ({medicalRecords}) => {
          </CCardHeader>
          <CCardBody style={{ padding: 0 }}>
            <div className="table-responsive-wrapper">
-             <CTable bordered hover responsive className="modern-table">
+             <CTable bordered responsive className="modern-table">
                <CTableHead>
                  <CTableRow className="table-header-row">
                    <CTableHeaderCell>Record ID</CTableHeaderCell>
                    <CTableHeaderCell>Record Type</CTableHeaderCell>
-                   <CTableHeaderCell>Diagnosis Name</CTableHeaderCell>
-                   <CTableHeaderCell>Diagnosis Type</CTableHeaderCell>
+                   <CTableHeaderCell>Diagnosis Description</CTableHeaderCell>
+                   {/* <CTableHeaderCell>Diagnosis Type</CTableHeaderCell> */}
                    <CTableHeaderCell>Severity</CTableHeaderCell>
                    <CTableHeaderCell>Symptoms</CTableHeaderCell>
-                   <CTableHeaderCell>Status</CTableHeaderCell>
+                   {/* <CTableHeaderCell>Status</CTableHeaderCell> */}
                    <CTableHeaderCell>Created At</CTableHeaderCell>
+                   <CTableHeaderCell>Action</CTableHeaderCell>
                  </CTableRow>
                </CTableHead>
                <CTableBody>
@@ -498,20 +630,21 @@ const Reports = ({medicalRecords}) => {
                    <CTableRow key={record.medicalRecordId} className="table-row-animated">
                      <CTableDataCell className="fw-semibold">{record.medicalRecordId}</CTableDataCell>
                      <CTableDataCell>{record.recordType}</CTableDataCell>
-                     <CTableDataCell className="fw-semibold">{record.diagnosis.diagnosisName}</CTableDataCell>
-                     <CTableDataCell>{record.diagnosis.diagnosisType}</CTableDataCell>
+                     <CTableDataCell className="fw-semibold">{record.diagnosis.description}</CTableDataCell>
+                     {/* <CTableDataCell>{record.diagnosis.diagnosisType}</CTableDataCell> */}
                      <CTableDataCell>
                        <CBadge color={getSeverityColor(record.diagnosis.severity)} className="badge-modern">
                          {record.diagnosis.severity}
                        </CBadge>
                      </CTableDataCell>
                      <CTableDataCell>{record.symptoms}</CTableDataCell>
-                     <CTableDataCell>
+                     {/* <CTableDataCell>
                        <CBadge color={getStatusColor(record.status)} className="badge-modern">
                          {record.status}
                        </CBadge>
-                     </CTableDataCell>
+                     </CTableDataCell> */}
                      <CTableDataCell className="text-muted">{record.createdAt}</CTableDataCell>
+                     <CTableDataCell className="text-muted"><button onClick={() => handleViewSummary(record)} className="btn btn-primary">View</button></CTableDataCell>
                    </CTableRow>
                  ))}
                </CTableBody>

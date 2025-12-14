@@ -5,9 +5,12 @@ import 'core-js'
 
 import App from './App'
 import store from './store'
+import { PatientProvider } from './context/PatientContext'
 
 createRoot(document.getElementById('root')).render(
   <Provider store={store}>
-    <App />
+    <PatientProvider>
+      <App />
+    </PatientProvider>
   </Provider>,
 )

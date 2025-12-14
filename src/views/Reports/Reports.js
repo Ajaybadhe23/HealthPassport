@@ -1,24 +1,14 @@
-import { useState } from 'react';
+import { useEffect } from 'react';
 import DocumentListWithPreview from '../../components/docVeiwer'
 import FloatingAddButton from '../../components/floatingAction';
-export const documentsList = [
-  {
-    id: 1,
-    name: "Blood Report.pdf",
-    type: "pdf",
-    url: "C:\Users\MHKTN20\Downloads\pdf-test.pdf",
-  },
-  {
-    id: 2,
-    name: "Chest X-Ray.png",
-    type: "image",
-    url: "https://www.bing.com/th/id/OIP.5-YNnF3PvmgIEg5FqpRzQwHaGR?w=262&h=211&c=8&rs=1&qlt=90&o=6&cb=ucfimg1&dpr=1.5&pid=3.1&rm=2&ucfimg=1",
-  },
-];
-
+import { usePatient } from '../../context/PatientContext';
 
 function Reports() {
-  const [documents, setDocuments] = useState(documentsList);
+  const { reportList, setReportList, getReportList, reportsLoading } = usePatient();
+
+  useEffect(() => {
+    getReportList();
+  }, [getReportList]);
 
   // Handle successful upload
   const handleUploadSuccess = (uploadResults) => {
@@ -31,7 +21,8 @@ function Reports() {
       url: result.url || result.fileUrl,
     }));
 
-    setDocuments((prevDocuments) => [...prevDocuments, ...newDocuments]);
+    // setReportList((prevDocuments) => [...prevDocuments, ...newDocuments]);
+    getReportList();
   };
 
   
@@ -65,7 +56,7 @@ function Reports() {
           View and manage your medical documents
         </p>
       </div>
-      <DocumentListWithPreview documents={documents}/>
+      <DocumentListWithPreview documents={reportList} loading={reportsLoading}/>
       <FloatingAddButton onUploadSuccess={handleUploadSuccess}/>
     </div>
   )

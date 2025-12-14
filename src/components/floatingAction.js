@@ -5,34 +5,43 @@ import { uploadDocument } from "../services/uploadService";
 
 export default function FloatingAddButton({ onUploadSuccess }) {
   const [open, setOpen] = useState(false);
-  const [selectedReport, setSelectedReport] = useState(null);
-  const [selectedPrescription, setSelectedPrescription] = useState(null);
+  const [selectedReports, setSelectedReports] = useState([]);
+  const [selectedPrescriptions, setSelectedPrescriptions] = useState([]);
   const [isUploading, setIsUploading] = useState(false);
 
   const containerRef = useRef(null);
   const reportInputRef = useRef(null);
   const prescriptionInputRef = useRef(null);
 
-  // Handle file selection
+  // Handle file selection - supports multiple files
   const handleReportFile = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedReport(file);
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setSelectedReports(prev => [...prev, ...files]);
       setOpen(true); // Keep menu open to show submit button
     }
   };
 
   const handlePrescriptionFile = (event) => {
-    const file = event.target.files[0];
-    if (file) {
-      setSelectedPrescription(file);
+    const files = Array.from(event.target.files);
+    if (files.length > 0) {
+      setSelectedPrescriptions(prev => [...prev, ...files]);
       setOpen(true); // Keep menu open to show submit button
     }
   };
 
+  // Remove a specific file
+  const removeReport = (index) => {
+    setSelectedReports(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const removePrescription = (index) => {
+    setSelectedPrescriptions(prev => prev.filter((_, i) => i !== index));
+  };
+
   // Handle submit/upload
   const handleSubmit = async () => {
-    if (!selectedReport && !selectedPrescription) {
+    if (selectedReports.length === 0 && selectedPrescriptions.length === 0) {
       alert("Please select at least one file to upload");
       return;
     }
@@ -42,22 +51,22 @@ export default function FloatingAddButton({ onUploadSuccess }) {
     try {
       const uploadPromises = [];
 
-      // Upload report if selected
-      if (selectedReport) {
-        uploadPromises.push(uploadDocument(selectedReport));
-      }
+      // Upload all reports
+      selectedReports.forEach(file => {
+        uploadPromises.push(uploadDocument(file));
+      });
 
-      // Upload prescription if selected
-      if (selectedPrescription) {
-        uploadPromises.push(uploadDocument(selectedPrescription));
-      }
+      // Upload all prescriptions
+      selectedPrescriptions.forEach(file => {
+        uploadPromises.push(uploadDocument(file));
+      });
 
       // Wait for all uploads to complete
       const results = await Promise.all(uploadPromises);
 
       // Reset state
-      setSelectedReport(null);
-      setSelectedPrescription(null);
+      setSelectedReports([]);
+      setSelectedPrescriptions([]);
       setOpen(false);
       
       // Reset file inputs
@@ -73,7 +82,8 @@ export default function FloatingAddButton({ onUploadSuccess }) {
         onUploadSuccess(results);
       }
 
-      alert("Files uploaded successfully!");
+      const totalFiles = selectedReports.length + selectedPrescriptions.length;
+      alert(`${totalFiles} file${totalFiles > 1 ? 's' : ''} uploaded successfully!`);
     } catch (error) {
       console.error("Upload error:", error);
       alert(`Upload failed: ${error.response?.data?.message || error.message || 'Unknown error'}`);
@@ -81,6 +91,8 @@ export default function FloatingAddButton({ onUploadSuccess }) {
       setIsUploading(false);
     }
   };
+
+  const totalFilesCount = selectedReports.length + selectedPrescriptions.length;
 
   // Detect clicks outside the floating menu
   useEffect(() => {
@@ -111,13 +123,14 @@ export default function FloatingAddButton({ onUploadSuccess }) {
         </div>
       )}
 
-      {/* Hidden file inputs */}
+      {/* Hidden file inputs with multiple support */}
       <input
         type="file"
         ref={reportInputRef}
         style={{ display: "none" }}
         onChange={handleReportFile}
         accept=".pdf,.jpg,.png"
+        multiple
       />
       <input
         type="file"
@@ -125,6 +138,7 @@ export default function FloatingAddButton({ onUploadSuccess }) {
         style={{ display: "none" }}
         onChange={handlePrescriptionFile}
         accept=".pdf,.jpg,.png"
+        multiple
       />
 
       {/* Floating Button Container */}
@@ -132,26 +146,68 @@ export default function FloatingAddButton({ onUploadSuccess }) {
         {/* Mini buttons */}
         {open && (
           <div style={styles.miniButtons}>
-            <CButton
-              color="info"
-              style={styles.miniBtn}
-              onClick={() => reportInputRef.current.click()}
-              disabled={isUploading}
-            >
-              {selectedReport ? `Report: ${selectedReport.name}` : "Add Report"}
-            </CButton>
+            {/* Reports Section */}
+            <div style={styles.fileSection}>
+              <CButton
+                color="info"
+                style={styles.miniBtn}
+                onClick={() => reportInputRef.current.click()}
+                disabled={isUploading}
+              >
+                📄 Add Reports {selectedReports.length > 0 && `(${selectedReports.length})`}
+              </CButton>
+              
+              {/* Show selected reports */}
+              {selectedReports.length > 0 && (
+                <div style={styles.fileList}>
+                  {selectedReports.map((file, index) => (
+                    <div key={index} style={styles.fileItem}>
+                      <span style={styles.fileName}>{file.name}</span>
+                      <button
+                        style={styles.removeBtn}
+                        onClick={() => removeReport(index)}
+                        disabled={isUploading}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
-            <CButton
-              color="warning"
-              style={styles.miniBtn}
-              onClick={() => prescriptionInputRef.current.click()}
-              disabled={isUploading}
-            >
-              {selectedPrescription ? `Prescription: ${selectedPrescription.name}` : "Add Prescription"}
-            </CButton>
+            {/* Prescriptions Section */}
+            <div style={styles.fileSection}>
+              <CButton
+                color="warning"
+                style={styles.miniBtn}
+                onClick={() => prescriptionInputRef.current.click()}
+                disabled={isUploading}
+              >
+                💊 Add Prescriptions {selectedPrescriptions.length > 0 && `(${selectedPrescriptions.length})`}
+              </CButton>
+              
+              {/* Show selected prescriptions */}
+              {selectedPrescriptions.length > 0 && (
+                <div style={styles.fileList}>
+                  {selectedPrescriptions.map((file, index) => (
+                    <div key={index} style={styles.fileItem}>
+                      <span style={styles.fileName}>{file.name}</span>
+                      <button
+                        style={styles.removeBtn}
+                        onClick={() => removePrescription(index)}
+                        disabled={isUploading}
+                      >
+                        ×
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
 
             {/* Submit button - only show if files are selected */}
-            {(selectedReport || selectedPrescription) && (
+            {totalFilesCount > 0 && (
               <CButton
                 color="success"
                 style={styles.submitBtn}
@@ -161,7 +217,7 @@ export default function FloatingAddButton({ onUploadSuccess }) {
                 {isUploading && (
                   <CSpinner as="span" size="sm" aria-hidden="true" style={{ marginRight: "8px" }} />
                 )}
-                {isUploading ? "Uploading..." : "Submit"}
+                {isUploading ? "Uploading..." : `Upload ${totalFilesCount} File${totalFilesCount > 1 ? 's' : ''}`}
               </CButton>
             )}
           </div>
@@ -208,6 +264,12 @@ const styles = {
     flexDirection: "column",
     gap: 10,
     animation: "fadeIn 0.3s ease-out",
+    maxWidth: "280px",
+  },
+  fileSection: {
+    display: "flex",
+    flexDirection: "column",
+    gap: "6px",
   },
   miniBtn: {
     textAlign: "center",
@@ -216,10 +278,48 @@ const styles = {
     fontWeight: 600,
     boxShadow: "0 4px 12px rgba(0, 0, 0, 0.15)",
     transition: "all 0.3s ease",
-    maxWidth: "200px",
+    whiteSpace: "nowrap",
+  },
+  fileList: {
+    background: "rgba(255, 255, 255, 0.95)",
+    borderRadius: "8px",
+    padding: "8px",
+    maxHeight: "120px",
+    overflowY: "auto",
+    boxShadow: "0 2px 8px rgba(0, 0, 0, 0.1)",
+  },
+  fileItem: {
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "space-between",
+    padding: "4px 8px",
+    borderRadius: "4px",
+    background: "#f8f9fa",
+    marginBottom: "4px",
+    fontSize: "0.8rem",
+  },
+  fileName: {
     overflow: "hidden",
     textOverflow: "ellipsis",
     whiteSpace: "nowrap",
+    maxWidth: "180px",
+    color: "#495057",
+  },
+  removeBtn: {
+    background: "#dc3545",
+    color: "white",
+    border: "none",
+    borderRadius: "50%",
+    width: "20px",
+    height: "20px",
+    fontSize: "14px",
+    lineHeight: "1",
+    cursor: "pointer",
+    display: "flex",
+    alignItems: "center",
+    justifyContent: "center",
+    marginLeft: "8px",
+    flexShrink: 0,
   },
   submitBtn: {
     textAlign: "center",
