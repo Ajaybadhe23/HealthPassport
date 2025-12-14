@@ -912,56 +912,83 @@ function PatientInfoCard({patientData }) {
 
   return (
     <CCard className="patient-info-card">
-      <CCardHeader className="patient-info-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <h3 style={{ margin: 0, fontWeight: 600 }}>User Information</h3>
-        <CButton 
-          color="success" 
-          size="sm" 
-          onClick={handleShareOnWhatsApp}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: 'white' }}
-        >
-          <CIcon icon={cilShare} size="sm" />
-          Share
-        </CButton>
+      <div className="patient-card-background"></div>
+      <CCardHeader className="patient-info-header">
+        <div className="header-content">
+          <div className="header-title-section">
+            <CIcon icon={cilBadge} className="header-icon" />
+            <h3 className="header-title">User Information</h3>
+          </div>
+          <CButton 
+            color="success" 
+            size="sm" 
+            onClick={handleShareOnWhatsApp}
+            className="share-button"
+          >
+            <CIcon icon={cilShare} size="sm" />
+            <span>Share</span>
+          </CButton>
+        </div>
       </CCardHeader>
       <CCardBody className="patient-info-body">
         <div className="patient-avatar-section">
-          {/* Avatar */}
+          {/* Avatar with enhanced design */}
           <div className="avatar-wrapper">
+            <div className="avatar-glow"></div>
             <img 
               src={avatar} 
               alt="avatar" 
               className="patient-avatar"
             />
             <div className="avatar-ring"></div>
+            <div className="avatar-status-indicator"></div>
           </div>
-          {/* Name and Age */}
+          {/* Name and Age with enhanced styling */}
           <div className="patient-name-section">
-            <h2 className="patient-name">{name || 'User Name'}</h2>
-            <p className="patient-age">Age: {age || 'N/A'}</p>
+            <div className="name-badge">
+              <h2 className="patient-name">{name || 'User Name'}</h2>
+            </div>
+            <div className="patient-meta">
+              <div className="meta-item">
+                <span className="meta-label">Age</span>
+                <span className="meta-value">{age || 'N/A'}</span>
+              </div>
+              {bloodGroup && (
+                <div className="meta-item">
+                  <span className="meta-label">Blood Type</span>
+                  <CBadge color="danger" className="blood-badge-enhanced">{bloodGroup}</CBadge>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Other Info */}
+        {/* Enhanced Info Grid */}
         <div className="patient-info-grid">
-          <div className="info-item">
-            <CIcon icon={cilBadge} className="info-icon" />
-            <div>
-              <span className="info-label">ID</span>
+          <div className="info-item info-item-enhanced">
+            <div className="info-icon-wrapper">
+              <CIcon icon={cilBadge} className="info-icon" />
+            </div>
+            <div className="info-content">
+              <span className="info-label">Patient ID</span>
               <span className="info-value">{id || 'N/A'}</span>
             </div>
           </div>
-          <div className="info-item">
-            <CIcon icon={cilHeart} className="info-icon" />
-            <div>
+          <div className="info-item info-item-enhanced">
+            <div className="info-icon-wrapper">
+              <CIcon icon={cilHeart} className="info-icon" />
+            </div>
+            <div className="info-content">
               <span className="info-label">Blood Group</span>
-              <CBadge color="danger" className="blood-badge">{bloodGroup || 'N/A'}</CBadge>
+              <CBadge color="danger" className="blood-badge-enhanced">{bloodGroup || 'N/A'}</CBadge>
             </div>
           </div>
-          <div className="info-item">
-            <CIcon icon={cilPhone} className="info-icon" />
-            <div>
-              <span className="info-label">Contact</span>
+          <div className="info-item info-item-enhanced">
+            <div className="info-icon-wrapper">
+              <CIcon icon={cilPhone} className="info-icon" />
+            </div>
+            <div className="info-content">
+              <span className="info-label">Contact Number</span>
               <span className="info-value">{contactNumber || 'N/A'}</span>
             </div>
           </div>
