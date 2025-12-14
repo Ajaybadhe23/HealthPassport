@@ -388,10 +388,11 @@
 
 
 
-import { cilBadge, cilHeart, cilPhone, cilDescription } from '@coreui/icons'; // Icons themselves
+import { cilBadge, cilHeart, cilPhone, cilDescription, cilShare } from '@coreui/icons'; // Icons themselves
 import { CIcon } from '@coreui/icons-react'; // Correct package
 import {
   CBadge,
+  CButton,
   CCard,
   CCardBody,
   CCardHeader,
@@ -525,11 +526,25 @@ const Reports = ({medicalRecords}) => {
 function PatientInfoCard({patientData }) {
   const { name, id, age, bloodGroup, contactNumber,  } = patientData;
 
+  const handleShareOnWhatsApp = () => {
+    const currentUrl = window.location.href;
+    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(currentUrl)}`;
+    window.open(whatsappUrl, '_blank');
+  };
 
   return (
     <CCard className="patient-info-card">
-      <CCardHeader className="patient-info-header">
+      <CCardHeader className="patient-info-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <h3 style={{ margin: 0, fontWeight: 600 }}>User Information</h3>
+        <CButton 
+          color="success" 
+          size="sm" 
+          onClick={handleShareOnWhatsApp}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+        >
+          <CIcon icon={cilShare} size="sm" />
+          Share
+        </CButton>
       </CCardHeader>
       <CCardBody className="patient-info-body">
         <div className="patient-avatar-section">
