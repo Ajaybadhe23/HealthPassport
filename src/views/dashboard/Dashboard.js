@@ -918,7 +918,7 @@ function PatientInfoCard({patientData }) {
           color="success" 
           size="sm" 
           onClick={handleShareOnWhatsApp}
-          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600 }}
+          style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 600, color: 'white' }}
         >
           <CIcon icon={cilShare} size="sm" />
           Share
