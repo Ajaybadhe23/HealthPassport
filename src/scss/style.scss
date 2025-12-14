@@ -649,41 +649,112 @@ body {
 }
 
 // Sidebar Enhancements
+.sidebar {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  border-right: none !important;
+  
+  &::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: 
+      radial-gradient(circle at 20% 50%, rgba(255, 255, 255, 0.1) 0%, transparent 50%),
+      radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.08) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+}
+
+.sidebar-header {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 1;
+}
+
+.sidebar-footer {
+  background: rgba(255, 255, 255, 0.12) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.25) !important;
+  backdrop-filter: blur(20px);
+  position: relative;
+  z-index: 1;
+}
+
 .sidebar-brand-full {
   font-weight: 700;
   font-size: 1.3rem;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: #ffffff !important;
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
   letter-spacing: 0.5px;
 }
 
 // Sidebar Navigation Enhancements
 .sidebar-nav {
+  position: relative;
+  z-index: 1;
+  
   .nav-link {
     border-radius: 10px;
     margin: 4px 8px;
     transition: all 0.3s ease;
     padding: 10px 16px;
+    color: rgba(255, 255, 255, 0.9) !important;
     
     &:hover {
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.15) !important;
       transform: translateX(5px);
+      color: #ffffff !important;
     }
     
     &.active {
-      background: linear-gradient(135deg, rgba(102, 126, 234, 0.2) 0%, rgba(118, 75, 162, 0.2) 100%);
-      border-left: 3px solid #667eea;
+      background: rgba(255, 255, 255, 0.25) !important;
+      border-left: 3px solid #ffffff;
+      color: #ffffff !important;
     }
   }
   
   .nav-icon {
     transition: transform 0.3s ease;
+    color: rgba(255, 255, 255, 0.9) !important;
   }
   
-  .nav-link:hover .nav-icon {
+  .nav-link:hover .nav-icon,
+  .nav-link.active .nav-icon {
     transform: scale(1.1);
+    color: #ffffff !important;
+  }
+  
+  .nav-group-items {
+    .nav-link {
+      color: rgba(255, 255, 255, 0.85) !important;
+      
+      &:hover {
+        color: #ffffff !important;
+      }
+    }
+  }
+}
+
+// Sidebar toggler
+.sidebar-toggler {
+  color: rgba(255, 255, 255, 0.9) !important;
+  
+  &:hover {
+    color: #ffffff !important;
+    background: rgba(255, 255, 255, 0.15) !important;
+  }
+}
+
+// Close button in sidebar
+.sidebar .close {
+  color: rgba(255, 255, 255, 0.9) !important;
+  
+  &:hover {
+    color: #ffffff !important;
   }
 }
 

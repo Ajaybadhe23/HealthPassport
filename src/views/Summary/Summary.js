@@ -425,8 +425,54 @@ function Summary() {
 
       <div style={{ padding: "16px" }}>
         
-        {/* Report Overview Card */}
-        <CCard style={{
+        {/* Analysis Failed Message */}
+        {reportData.metadata?.analyzeSuccessful === false && (
+          <CCard style={{
+            borderRadius: "16px",
+            border: "none",
+            boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
+            marginBottom: "16px",
+            background: "linear-gradient(135deg, #ffebee 0%, #fff 100%)",
+            borderLeft: "4px solid #f44336"
+          }}>
+            <CCardBody style={{ padding: "20px" }}>
+              <div style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "12px"
+              }}>
+                <CIcon icon={cilWarning} style={{ color: "#f44336", fontSize: "2rem" }} />
+                <div style={{ flex: 1 }}>
+                  <h3 style={{
+                    margin: 0,
+                    marginBottom: "8px",
+                    color: "#c62828",
+                    fontWeight: 700,
+                    fontSize: "1.1rem"
+                  }}>
+                    Cannot Analyze This Report
+                  </h3>
+                  <p style={{
+                    margin: 0,
+                    color: "#666",
+                    fontSize: "0.9rem",
+                    lineHeight: 1.5
+                  }}>
+                    We were unable to analyze this PDF document. The file may be corrupted, 
+                    unreadable, or in an unsupported format. Please try uploading a different 
+                    document or contact support if the issue persists.
+                  </p>
+                </div>
+              </div>
+            </CCardBody>
+          </CCard>
+        )}
+        
+        {/* Only show report content if analysis was successful */}
+        {reportData.metadata?.analyzeSuccessful !== false && (
+          <>
+            {/* Report Overview Card */}
+            <CCard style={{
           borderRadius: "16px",
           border: "none",
           boxShadow: "0 4px 20px rgba(0, 0, 0, 0.08)",
@@ -1325,6 +1371,23 @@ function Summary() {
             </p>
           </CCardBody>
         </CCard>
+          </>
+        )}
+
+        {/* Disclaimer */}
+        <div style={{ 
+          marginTop: '40px', 
+          padding: '15px', 
+          textAlign: 'center', 
+          backgroundColor: '#fff3cd', 
+          border: '1px solid #ffc107',
+          borderRadius: '12px',
+          color: '#856404'
+        }}>
+          <small style={{ fontStyle: 'italic' }}>
+            <strong>Disclaimer:</strong> This is AI-generated content. Details should not be relied upon for medical decisions. Please consult with a qualified healthcare professional for accurate medical information.
+          </small>
+        </div>
       </div>
     </div>
   );
