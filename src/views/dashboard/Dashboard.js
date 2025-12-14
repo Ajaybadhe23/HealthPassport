@@ -388,7 +388,7 @@
 
 
 
-import { cilBadge, cilHeart, cilPhone, cilDescription, cilShare, cilCalendar } from '@coreui/icons'; // Icons themselves
+import { cilBadge, cilHeart, cilPhone, cilDescription, cilShare, cilCalendar, cilChart } from '@coreui/icons'; // Icons themselves
 import { CIcon } from '@coreui/icons-react'; // Correct package
 import {
   CBadge,
@@ -403,11 +403,59 @@ import {
   CTableHeaderCell,
   CTableRow,
 } from "@coreui/react";
+import { CChartLine } from '@coreui/react-chartjs';
+import { getStyle } from '@coreui/utils';
 import avatar from 'src/assets/images/avatars/2.jpg'
-import { useEffect, useMemo } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { getCurrentUserId, usePatient } from '../../context/PatientContext';
 import { useNavigate } from 'react-router-dom';
 
+
+// Dotted Circle Component for Score
+const DottedCircle = ({ score, color = "#667eea" }) => {
+  const radius = 65;
+  const dots = 24;
+  
+  return (
+    <div style={{ position: "relative", width: "180px", height: "180px", margin: "0 auto" }}>
+      <svg width="180" height="180">
+        {Array.from({ length: dots }).map((_, i) => {
+          const angle = (i * 360) / dots;
+          const radian = (angle * Math.PI) / 180;
+          const x = 90 + radius * Math.cos(radian);
+          const y = 90 + radius * Math.sin(radian);
+          const fillProgress = (i / dots) <= (score / 100);
+          return (
+            <circle
+              key={i}
+              cx={x}
+              cy={y}
+              r="4"
+              fill={fillProgress ? color : "#e0e0e0"}
+              opacity={fillProgress ? 1 : 0.5}
+            />
+          );
+        })}
+      </svg>
+      <div style={{
+        position: "absolute",
+        top: "50%",
+        left: "50%",
+        transform: "translate(-50%, -50%)",
+        textAlign: "center"
+      }}>
+        <div style={{
+          fontSize: "3.5rem",
+          fontWeight: 700,
+          color: color,
+          lineHeight: 1
+        }}>
+          {score}
+        </div>
+      </div>
+    </div>
+  );
+};
 
 // Function to get badge color based on severity
 const getSeverityColor = (severity) => {
@@ -452,14 +500,211 @@ export default function Dashboard() {
     <div className="dashboard-container">
       {/* Patient Info */}
      <PatientInfoCard patientData={patientData}/>
+     <HealthScoreChart medicalRecords={medicalRecordShorts}/>
      <TimelineView medicalRecords={medicalRecordShorts}/>
-    <Reports medicalRecords={medicalRecordShorts}/>
+    {/* <Reports medicalRecords={medicalRecordShorts}/> */}
+    
+    {/* Disclaimer */}
+    <div style={{ 
+      marginTop: '40px', 
+      padding: '15px', 
+      textAlign: 'center', 
+      backgroundColor: '#fff3cd', 
+      border: '1px solid #ffc107',
+      borderRadius: '5px',
+      color: '#856404'
+    }}>
+      <small style={{ fontStyle: 'italic' }}>
+        <strong>Disclaimer:</strong> This is AI-generated content. Details should not be relied upon for medical decisions. Please consult with a qualified healthcare professional for accurate medical information.
+      </small>
+    </div>
 
     </div>
   );
 }
 
 
+
+// Health Score Chart Component
+const HealthScoreChart = ({ medicalRecords }) => {
+  const chartRef = useRef(null);
+
+  useEffect(() => {
+    const handleColorSchemeChange = () => {
+      if (chartRef.current) {
+        setTimeout(() => {
+          chartRef.current.options.scales.x.grid.borderColor = getStyle(
+            '--cui-border-color-translucent',
+          );
+          chartRef.current.options.scales.x.grid.color = getStyle('--cui-border-color-translucent');
+          chartRef.current.options.scales.x.ticks.color = getStyle('--cui-body-color');
+          chartRef.current.options.scales.y.grid.borderColor = getStyle(
+            '--cui-border-color-translucent',
+          );
+          chartRef.current.options.scales.y.grid.color = getStyle('--cui-border-color-translucent');
+          chartRef.current.options.scales.y.ticks.color = getStyle('--cui-body-color');
+          chartRef.current.update();
+        });
+      }
+    };
+
+    document.documentElement.addEventListener('ColorSchemeChange', handleColorSchemeChange);
+    return () =>
+      document.documentElement.removeEventListener('ColorSchemeChange', handleColorSchemeChange);
+  }, [chartRef]);
+
+  // Process medical records to extract health scores
+  const chartData = useMemo(() => {
+    if (!medicalRecords || medicalRecords.length === 0) {
+      return { labels: [], data: [] };
+    }
+
+    // Sort records by date
+    const sortedRecords = [...medicalRecords].sort((a, b) => {
+      const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+      const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+      return dateA - dateB;
+    });
+
+    // Extract health scores using healthScore property
+    const scores = [];
+    const labels = [];
+
+    sortedRecords.forEach((record) => {
+      // Only use healthScore property
+      if (record.healthScore !== undefined && record.healthScore !== null) {
+        scores.push(record.healthScore);
+        // Format date for label
+        if (record.createdAt) {
+          try {
+            const date = new Date(record.createdAt);
+            labels.push(date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }));
+          } catch (e) {
+            labels.push(record.createdAt);
+          }
+        } else {
+          labels.push('N/A');
+        }
+      }
+    });
+
+    return { labels, data: scores };
+  }, [medicalRecords]);
+
+  // Calculate overall health average (must be before conditional return to follow Rules of Hooks)
+  const overallAverage = useMemo(() => {
+    if (!chartData.data || chartData.data.length === 0) return 0;
+    const sum = chartData.data.reduce((acc, score) => acc + score, 0);
+    return Math.round((sum / chartData.data.length) * 10) / 10; // Round to 1 decimal place
+  }, [chartData.data]);
+
+  // Don't render if no data
+  if (!chartData.labels.length || !chartData.data.length) {
+    return null;
+  }
+
+  return (
+    <CCard className="health-score-chart-card">
+      <CCardHeader className="health-score-chart-header">
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <CIcon icon={cilChart} size="lg" />
+            <h4 style={{ margin: 0, fontWeight: 600 }}>Health Score Trend</h4>
+          </div>
+          <div style={{ 
+            display: 'flex', 
+            alignItems: 'center', 
+            gap: '8px',
+            padding: '8px 16px',
+            backgroundColor: getStyle('--cui-success'),
+            borderRadius: '8px',
+            color: 'white'
+          }}>
+            <span style={{ fontSize: '14px', fontWeight: 500 }}>Overall Average:</span>
+            <span style={{ fontSize: '20px', fontWeight: 700 }}>{overallAverage}</span>
+          </div>
+        </div>
+      </CCardHeader>
+      <CCardBody>
+        <CChartLine
+          ref={chartRef}
+          style={{ height: '300px' }}
+          data={{
+            labels: chartData.labels,
+            datasets: [
+              {
+                label: 'Health Score',
+                backgroundColor: `rgba(${getStyle('--cui-success-rgb')}, .1)`,
+                borderColor: getStyle('--cui-success'),
+                pointHoverBackgroundColor: getStyle('--cui-success'),
+                borderWidth: 2,
+                data: chartData.data,
+                fill: true,
+              },
+            ],
+          }}
+          options={{
+            maintainAspectRatio: false,
+            plugins: {
+              legend: {
+                display: true,
+                position: 'top',
+              },
+              tooltip: {
+                callbacks: {
+                  label: function(context) {
+                    return `Health Score: ${context.parsed.y}`;
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                grid: {
+                  color: getStyle('--cui-border-color-translucent'),
+                  drawOnChartArea: false,
+                },
+                ticks: {
+                  color: getStyle('--cui-body-color'),
+                },
+              },
+              y: {
+                beginAtZero: false,
+                min: 0,
+                max: 100,
+                border: {
+                  color: getStyle('--cui-border-color-translucent'),
+                },
+                grid: {
+                  color: getStyle('--cui-border-color-translucent'),
+                },
+                ticks: {
+                  color: getStyle('--cui-body-color'),
+                  maxTicksLimit: 10,
+                  stepSize: 10,
+                  callback: function(value) {
+                    return value + '%';
+                  }
+                },
+              },
+            },
+            elements: {
+              line: {
+                tension: 0.4,
+              },
+              point: {
+                radius: 4,
+                hitRadius: 10,
+                hoverRadius: 6,
+                hoverBorderWidth: 3,
+              },
+            },
+          }}
+        />
+      </CCardBody>
+    </CCard>
+  );
+};
 
 // Timeline Component - Groups records by date
 const TimelineView = ({ medicalRecords }) => {
@@ -524,7 +769,7 @@ const TimelineView = ({ medicalRecords }) => {
   }
   
   return (
-    <CCard className="timeline-card">
+    <CCard className="timeline-card mt-4">
       <CCardHeader className="timeline-header">
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
           <CIcon icon={cilCalendar} size="lg" />
@@ -602,7 +847,7 @@ const Reports = ({medicalRecords}) => {
     });
 };
   return (
-         <CCard className="medical-records-card">
+         <CCard className="medical-records-card"  style={{marginTop: '20px'}}>
          <CCardHeader className="medical-records-header">
            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
              <CIcon icon={cilDescription} size="lg" />

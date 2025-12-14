@@ -13,6 +13,7 @@ import {
     CModalFooter,
     CModalHeader,
     CModalTitle,
+    CSpinner,
 } from "@coreui/react";
 
 
@@ -191,18 +192,33 @@ export default function DocumentListWithPreview({ documents }) {
                                     whiteSpace: "nowrap",
                                     boxShadow: "0 2px 8px rgba(102, 126, 234, 0.3)",
                                     transition: "all 0.3s ease",
-                                    flex: 7
+                                    flex: 7,
+                                    display: "flex",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "8px"
                                 }}
                                 onMouseEnter={(e) => {
-                                    e.target.style.transform = "translateY(-2px)";
-                                    e.target.style.boxShadow = "0 4px 12px rgba(102, 126, 234, 0.4)";
+                                    if (doc.processed) {
+                                        e.target.style.transform = "translateY(-2px)";
+                                        e.target.style.boxShadow = "0 4px 12px rgba(102, 126, 234, 0.4)";
+                                    }
                                 }}
                                 onMouseLeave={(e) => {
-                                    e.target.style.transform = "translateY(0)";
-                                    e.target.style.boxShadow = "0 2px 8px rgba(102, 126, 234, 0.3)";
+                                    if (doc.processed) {
+                                        e.target.style.transform = "translateY(0)";
+                                        e.target.style.boxShadow = "0 2px 8px rgba(102, 126, 234, 0.3)";
+                                    }
                                 }}
                             >
-                                View Summary
+                                {!doc.processed ? (
+                                    <>
+                                        <CSpinner size="sm" style={{ width: "14px", height: "14px" }} />
+                                        Generating Summary
+                                    </>
+                                ) : (
+                                    "View Summary"
+                                )}
                             </CButton>
                             <CButton
                                 color="success"

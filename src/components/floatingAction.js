@@ -83,7 +83,7 @@ export default function FloatingAddButton({ onUploadSuccess }) {
       }
 
       const totalFiles = selectedReports.length + selectedPrescriptions.length;
-      alert(`${totalFiles} file${totalFiles > 1 ? 's' : ''} uploaded successfully!`);
+      // alert(`${totalFiles} file${totalFiles > 1 ? 's' : ''} uploaded successfully!`);
     } catch (error) {
       console.error("Upload error:", error);
       alert(`Upload failed: ${error.response?.data?.message || error.message || 'Unknown error'}`);
